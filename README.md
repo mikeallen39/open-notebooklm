@@ -52,8 +52,8 @@ To set up the project, follow these steps:
 
 ## Usage
 
-1. **Set up API Key(s):**
-   For this project, I am using LLama 3.3 70B hosted on Fireworks API as its JSON Mode supports passing a pydantic object. So, please set the API key as the `FIREWORKS_API_KEY` environment variable
+1. **Set up the environment variables:**
+   copy the `set_env.sh` file to a new file `env.sh` which is owned by you(it will not be tracked by git), and set the environment variables to your own values. Then run it with `source env.sh`.
 
 2. **Run the application:**
    ```bash

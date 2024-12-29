@@ -23,6 +23,11 @@ from fireworks.client import Fireworks
 from gradio_client import Client
 from scipy.io.wavfile import write as write_wav
 
+from bs4 import BeautifulSoup
+import requests
+import trafilatura
+
+
 # Local imports
 from constants import (
     FIREWORKS_API_KEY,
@@ -153,3 +158,51 @@ def _get_melo_tts_params(speaker: str, language: str) -> tuple[str, float]:
         )  # if the language is not English, try speeding up so it'll sound different from the host
         # for non-English, there is only one voice
     return accent, speed
+
+
+def parse_url(url: str) -> str:
+    """Extract text content from a URL."""
+    try:
+        # 首先尝试使用 trafilatura 提取内容（更适合博客文章）
+        downloaded = trafilatura.fetch_url(url)
+        if downloaded:
+            text = trafilatura.extract(downloaded)
+            if text:
+                return text.strip()
+        
+        # 如果 trafilatura 失败，使用备选方案
+        response = requests.get(url)
+        response.raise_for_status()
+        
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # 移除不需要的元素
+        for element in soup.find_all(['script', 'style', 'nav', 'footer', 'header']):
+            element.decompose()
+        
+        # 获取主要内容
+        # 常见的内容容器 class/id
+        content_selectors = [
+            'article', 
+            '.post-content',
+            '.entry-content',
+            '.content',
+            'main'
+        ]
+        
+        content = None
+        for selector in content_selectors:
+            content = soup.select_one(selector)
+            if content:
+                break
+        
+        if content:
+            text = content.get_text(separator='\n', strip=True)
+        else:
+            # 如果没有找到特定容器，获取所有段落文本
+            text = '\n'.join([p.get_text() for p in soup.find_all('p')])
+        
+        return text.strip()
+        
+    except Exception as e:
+        raise ValueError(f"Error extracting content from URL: {str(e)}")
